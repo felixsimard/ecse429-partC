@@ -6,6 +6,7 @@ import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import org.json.simple.JSONObject;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 
 import static APITests.ApplicationManipulation.startApplication;
@@ -25,26 +26,13 @@ public class AppTests {
         RestAssured.baseURI = "http://localhost:4567";
     }
 
-    private class Test {
-
-        int total_instances = 0;
-        long t1_create;
-        long t2_create;
-
-        long t1_modify;
-        long t2_modify;
-
-        long t1_delete;
-        long t2_delete;
-
-        // getters and setters
-
-    }
 
     public static void main(String[] args) throws InterruptedException {
 
-        int NUM_TODOS_INITIAL = 3;
-        int NUM_LOOPS = 3;
+        int TOTAL_INSTANCES = 3;
+        int NUM_LOOPS = 10;
+
+        TodosTests todos = new TodosTests();
 
         // Stat application
         System.out.print("Starting application...");
@@ -55,26 +43,45 @@ public class AppTests {
         //-------------------------
 
         // Setup todos
-        setupTodos(NUM_TODOS_INITIAL);
+        setupTodos(TOTAL_INSTANCES);
+
+        ArrayList<TestResult> todosResults = new ArrayList<TestResult>();
 
         for(int i = 0; i < NUM_LOOPS; i++) {
+
+            TestResult tr;
+            long start_time;
+            long end_time;
 
             // Add another todo
             Random rn = new Random();
             AppTests.createTodo("Test Todo #"+rn.nextInt(), false, "This is a test description #"+rn.nextInt());
+            TOTAL_INSTANCES++;
 
             // Create todo
-            long start_time = Calendar.getInstance().getTimeInMillis();
-            // TodosTest.testCreateTodo()
-            long end_time = Calendar.getInstance().getTimeInMillis();
-            // end_time - start_time
+            start_time = Calendar.getInstance().getTimeInMillis();
+            long t2_create_todo = todos.testCreateTodo();
+            end_time = Calendar.getInstance().getTimeInMillis();
+            long t1_create_todo = end_time - start_time;
 
             // Modify todo
+            start_time = Calendar.getInstance().getTimeInMillis();
+            long t2_modify_todo = todos.testModifyTodo();
+            end_time = Calendar.getInstance().getTimeInMillis();
+            long t1_modify_todo = end_time - start_time;
 
             // Delete todo
+            start_time = Calendar.getInstance().getTimeInMillis();
+            long t2_delete_todo = todos.testDeleteTodo();
+            end_time = Calendar.getInstance().getTimeInMillis();
+            long t1_delete_todo = end_time - start_time;
 
+            tr = new TestResult(TOTAL_INSTANCES, t1_create_todo, t2_create_todo, t1_modify_todo, t2_modify_todo, t1_delete_todo, t2_delete_todo);
+            todosResults.add(tr);
 
         }
+
+        AppTests.displayResults(todosResults, "TODOS");
 
 
         //-------------------------
@@ -98,6 +105,17 @@ public class AppTests {
         System.out.print("Stopping application...");
         AppTests.teardown();
         System.out.print("OK\n----------\n");
+
+    }
+
+    public static void displayResults(ArrayList<TestResult> results, String resultsType) {
+
+        System.out.println("Results for " + resultsType);
+        System.out.println("Total "+resultsType+" \tT1 Create \tT2 Create \tT1 Modify \tT2 Modify \tT1 Delete \tT2 Delete");
+        for(TestResult tr: results) {
+            System.out.println(tr.getTotalInstances()+ "\t\t\t\t" +tr.getT1Create()+ "\t\t\t" +tr.getT2Create()+ "\t\t\t" +tr.getT1Modify()+ "\t\t\t" +tr.getT2Modify()+ "\t\t\t" +tr.getT1Delete()+ "\t\t\t" +tr.getT2Delete());
+        }
+        System.out.println("----------");
 
     }
 

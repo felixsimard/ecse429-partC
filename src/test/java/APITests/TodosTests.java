@@ -68,8 +68,8 @@ public class TodosTests extends BaseTestSetup {
 
         long startTime = Calendar.getInstance().getTimeInMillis();
         Response response = request.post("/todos");
+        response.then();
         long endTime = Calendar.getInstance().getTimeInMillis();
-        long responseEndTime = response.getTime();
         String body = response.getBody().asString();
         org.json.JSONObject jsonResponse = new org.json.JSONObject(body);
         Context.getContext().set("todoId", jsonResponse.getInt("id"), ContextElement.ElementType.TODO);
@@ -109,7 +109,7 @@ public class TodosTests extends BaseTestSetup {
 
         response.then()
                 .assertThat()
-                .statusCode(equalTo(STATUS_CODE_CREATED))
+                .statusCode(equalTo(STATUS_CODE_SUCCESS))
                 .body("title", equalTo(newTitle),
                         "doneStatus", equalTo(String.valueOf(newDoneStatus)),
                         "description", equalTo(newDescription));
