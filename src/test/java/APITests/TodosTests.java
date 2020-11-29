@@ -47,7 +47,7 @@ public class TodosTests extends BaseTestSetup {
     }
 
     /**
-     * Test: create a valid todo with only title in body.
+     * Test: create a valid todo.
      * Endpoint: POST /todos
      */
     @Test
@@ -84,6 +84,10 @@ public class TodosTests extends BaseTestSetup {
         return endTime - startTime;
     }
 
+    /**
+     * Test: modify a valid category.
+     * Endpoint: POST /todos
+     */
     @Test
     public long testModifyTodo() {
 
@@ -117,6 +121,10 @@ public class TodosTests extends BaseTestSetup {
         return endTime - startTime;
     }
 
+    /**
+     * Test: delete a valid todo.
+     * Endpoint: POST /todos
+     */
     @Test
     public long testDeleteTodo() {
         int todoId = Context.getContext().get("todoId");

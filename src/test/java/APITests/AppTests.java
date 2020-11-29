@@ -33,6 +33,7 @@ public class AppTests {
         int NUM_LOOPS = 10;
 
         TodosTests todos = new TodosTests();
+        CategoriesTests categories = new CategoriesTests();
 
         // Stat application
         System.out.print("Starting application...");
@@ -42,10 +43,17 @@ public class AppTests {
 
         //-------------------------
 
-        // Setup todos
+        // Setup todos, categories, projects
         setupTodos(TOTAL_INSTANCES);
+        setupCategories(TOTAL_INSTANCES);
 
+        // Initialize test results containers
         ArrayList<TestResult> todosResults = new ArrayList<TestResult>();
+        ArrayList<TestResult> categoriesResults = new ArrayList<TestResult>();
+        ArrayList<TestResult> projectsResults = new ArrayList<TestResult>();
+
+        //-------------------------
+        // TODOS
 
         for(int i = 0; i < NUM_LOOPS; i++) {
 
@@ -85,15 +93,51 @@ public class AppTests {
 
 
         //-------------------------
+        // CATEGORIES
 
-        // Setup categories
+        TOTAL_INSTANCES = 3; // reset total number of instances
+        for(int i = 0; i < NUM_LOOPS; i++) {
+
+            TestResult tr;
+            long start_time;
+            long end_time;
+
+            // Add another category
+            Random rn = new Random();
+            AppTests.createCategory("Test Category #"+rn.nextInt());
+            TOTAL_INSTANCES++;
+
+            // Create category
+            start_time = Calendar.getInstance().getTimeInMillis();
+            long t2_create_category = categories.testCreateCategory();
+            end_time = Calendar.getInstance().getTimeInMillis();
+            long t1_create_category = end_time - start_time;
+
+            // Modify category
+            start_time = Calendar.getInstance().getTimeInMillis();
+            long t2_modify_category = categories.testModifyCategory();
+            end_time = Calendar.getInstance().getTimeInMillis();
+            long t1_modify_category = end_time - start_time;
+
+            // Delete category
+            start_time = Calendar.getInstance().getTimeInMillis();
+            long t2_delete_category = categories.testDeleteCategory();
+            end_time = Calendar.getInstance().getTimeInMillis();
+            long t1_delete_category = end_time - start_time;
+
+            tr = new TestResult(TOTAL_INSTANCES, t1_create_category, t2_create_category, t1_modify_category, t2_modify_category, t1_delete_category, t2_delete_category);
+            categoriesResults.add(tr);
+
+        }
+
+        AppTests.displayResults(categoriesResults, "CATEGORIES");
+
 
 
 
 
         //-------------------------
 
-        // Setup projects
 
 
 
@@ -111,9 +155,9 @@ public class AppTests {
     public static void displayResults(ArrayList<TestResult> results, String resultsType) {
 
         System.out.println("Results for " + resultsType);
-        System.out.println("Total "+resultsType+" \tT1 Create \tT2 Create \tT1 Modify \tT2 Modify \tT1 Delete \tT2 Delete");
+        System.out.println("Total instances \tT1 Create \tT2 Create \tT1 Modify \tT2 Modify \tT1 Delete \tT2 Delete");
         for(TestResult tr: results) {
-            System.out.println(tr.getTotalInstances()+ "\t\t\t\t" +tr.getT1Create()+ "\t\t\t" +tr.getT2Create()+ "\t\t\t" +tr.getT1Modify()+ "\t\t\t" +tr.getT2Modify()+ "\t\t\t" +tr.getT1Delete()+ "\t\t\t" +tr.getT2Delete());
+            System.out.println(tr.getTotalInstances()+ "\t\t\t\t\t" +tr.getT1Create()+ "\t\t\t" +tr.getT2Create()+ "\t\t\t" +tr.getT1Modify()+ "\t\t\t" +tr.getT2Modify()+ "\t\t\t" +tr.getT1Delete()+ "\t\t\t" +tr.getT2Delete());
         }
         System.out.println("----------");
 
@@ -135,6 +179,18 @@ public class AppTests {
         }
         System.out.print("OK\n----------\n");
 
+    }
+
+    public static void setupCategories(int num_categories) {
+
+        RestAssured.baseURI = "http://localhost:4567";
+
+        System.out.print("Initializing categories...");
+        String title = "Test Category #";
+        for(int i = 0; i < num_categories; i++) {
+            AppTests.createCategory(title + (i+1));
+        }
+        System.out.print("OK\n----------\n");
     }
 
 
@@ -179,7 +235,7 @@ public class AppTests {
      *
      * @throws Exception - if category could not be created throws an exception -
      */
-    private int createCategory(String categoryName) throws Exception {
+    private static int createCategory(String categoryName) {
         RequestSpecification request = RestAssured.given();
 
         JSONObject requestParams = new JSONObject();
@@ -190,7 +246,7 @@ public class AppTests {
         Response response = request.post("/categories");
 
         if (response.statusCode() != STATUS_CODE_CREATED) {
-            throw new Exception("Could not create dummy category");
+            return -1;
         }
 
         int categoryID = Integer.parseInt((String) response.jsonPath().get("id"));
