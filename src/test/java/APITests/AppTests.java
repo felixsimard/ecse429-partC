@@ -12,6 +12,8 @@ import java.util.Calendar;
 import static APITests.ApplicationManipulation.startApplication;
 import static APITests.ApplicationManipulation.stopApplication;
 import static io.restassured.RestAssured.get;
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.core.IsEqual.equalTo;
 
 import java.util.Random;
 
@@ -46,6 +48,7 @@ public class AppTests {
         // Setup todos, categories, projects
         setupTodos(TOTAL_INSTANCES);
         setupCategories(TOTAL_INSTANCES);
+        setupProjects(TOTAL_INSTANCES);
 
         // Initialize test results containers
         ArrayList<TestResult> todosResults = new ArrayList<TestResult>();
@@ -132,23 +135,54 @@ public class AppTests {
 
         AppTests.displayResults(categoriesResults, "CATEGORIES");
 
+        //-------------------------
+        // PROJECTS
 
+        TOTAL_INSTANCES = 3; // reset total number of instances
+        for(int i = 0; i < NUM_LOOPS; i++) {
 
+            TestResult tr;
+            long start_time;
+            long end_time;
 
+            // Add another category
+            Random rn = new Random();
+            AppTests.createProject("Test Category #"+rn.nextInt(), false, true, "This is a test description #"+rn.nextInt());
+            TOTAL_INSTANCES++;
+
+            // Create project
+            start_time = Calendar.getInstance().getTimeInMillis();
+            long t2_create_project = categories.testCreateCategory();
+            end_time = Calendar.getInstance().getTimeInMillis();
+            long t1_create_project = end_time - start_time;
+
+            // Modify project
+            start_time = Calendar.getInstance().getTimeInMillis();
+            long t2_modify_project = categories.testModifyCategory();
+            end_time = Calendar.getInstance().getTimeInMillis();
+            long t1_modify_project = end_time - start_time;
+
+            // Delete project
+            start_time = Calendar.getInstance().getTimeInMillis();
+            long t2_delete_project = categories.testDeleteCategory();
+            end_time = Calendar.getInstance().getTimeInMillis();
+            long t1_delete_project = end_time - start_time;
+
+            tr = new TestResult(TOTAL_INSTANCES, t1_create_project, t2_create_project, t1_modify_project, t2_modify_project, t1_delete_project, t2_delete_project);
+            projectsResults.add(tr);
+
+        }
+
+        AppTests.displayResults(projectsResults, "PROJECTS");
 
         //-------------------------
-
-
-
-
-
-        //-------------------------
-
 
         // Teardown application
         System.out.print("Stopping application...");
         AppTests.teardown();
         System.out.print("OK\n----------\n");
+
+        return;
 
     }
 
@@ -168,7 +202,6 @@ public class AppTests {
      * @param num_todos
      */
     public static void setupTodos(int num_todos) {
-
         RestAssured.baseURI = "http://localhost:4567";
 
         System.out.print("Initializing todos...");
@@ -181,14 +214,33 @@ public class AppTests {
 
     }
 
+    /**
+     * Initialize some categories
+     * @param num_categories
+     */
     public static void setupCategories(int num_categories) {
-
         RestAssured.baseURI = "http://localhost:4567";
 
         System.out.print("Initializing categories...");
         String title = "Test Category #";
         for(int i = 0; i < num_categories; i++) {
             AppTests.createCategory(title + (i+1));
+        }
+        System.out.print("OK\n----------\n");
+    }
+
+    /**
+     * Initialize some projects
+     * @param num_projects
+     */
+    public static void setupProjects(int num_projects) {
+        RestAssured.baseURI = "http://localhost:4567";
+
+        System.out.print("Initializing projects...");
+        String title = "Test Project #";
+        String description = "This is a test description #";
+        for(int i = 0; i < num_projects; i++) {
+            AppTests.createProject(title + (i+1), false, true, description + (i+1));
         }
         System.out.print("OK\n----------\n");
     }
@@ -203,7 +255,6 @@ public class AppTests {
      *
      * @return int corresponding to id of todo
      *
-     * @throws Exception - if todo could not be created throws an exception -
      */
     private static int createTodo(String titleOfTodo, Boolean doneStatus, String descriptionOfTodo) {
         RequestSpecification request = RestAssured.given().baseUri("http://localhost:4567");
@@ -232,8 +283,6 @@ public class AppTests {
      * @param categoryName
      *
      * @return int corresponding to id of the category
-     *
-     * @throws Exception - if category could not be created throws an exception -
      */
     private static int createCategory(String categoryName) {
         RequestSpecification request = RestAssured.given();
@@ -251,6 +300,38 @@ public class AppTests {
 
         int categoryID = Integer.parseInt((String) response.jsonPath().get("id"));
         return categoryID;
+    }
+
+    /**
+     *
+     * This function will create a project
+     *
+     * @param title
+     * @param completed
+     * @param active
+     * @param description
+     *
+     * @return int corresponding to id of the project
+     */
+    private static int createProject(String title, boolean completed, boolean active, String description) {
+        RequestSpecification request = RestAssured.given();
+
+        JSONObject requestParams = new JSONObject();
+        requestParams.put("title", title);
+        requestParams.put("completed", completed);
+        requestParams.put("active", active);
+        requestParams.put("description", description);
+
+        request.body(requestParams.toJSONString());
+
+        Response response = request.post("/projects");
+
+        if (response.statusCode() != STATUS_CODE_CREATED) {
+            return -1;
+        }
+
+        int projectID = Integer.parseInt((String) response.jsonPath().get("id"));
+        return projectID;
     }
 
     /**
