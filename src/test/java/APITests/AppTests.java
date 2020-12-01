@@ -6,6 +6,9 @@ import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import org.json.simple.JSONObject;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 
@@ -24,18 +27,23 @@ public class AppTests {
     private static final int STATUS_CODE_FAILURE = 400;
     private static final int STATUS_CODE_NOT_FOUND = 404;
 
+
     public AppTests() {
         RestAssured.baseURI = "http://localhost:4567";
     }
 
+    public static void main(String[] args) throws InterruptedException, IOException{
 
-    public static void main(String[] args) throws InterruptedException {
+        ArrayList<FileWriter> todoCSVs = makeCSVs("todo");
+        ArrayList<FileWriter> projectCSVs = makeCSVs("project");
+        ArrayList<FileWriter> categoryCSVs = makeCSVs("category");
 
         int TOTAL_INSTANCES = 3;
         int NUM_LOOPS = 10;
 
         TodosTests todos = new TodosTests();
         CategoriesTests categories = new CategoriesTests();
+        ProjectsTests projects = new ProjectsTests();
 
         // Stat application
         System.out.print("Starting application...");
@@ -63,6 +71,7 @@ public class AppTests {
             TestResult tr;
             long start_time;
             long end_time;
+            long sample_time;
 
             // Add another todo
             Random rn = new Random();
@@ -70,22 +79,46 @@ public class AppTests {
             TOTAL_INSTANCES++;
 
             // Create todo
+            sample_time = Calendar.getInstance().getTimeInMillis();
             start_time = Calendar.getInstance().getTimeInMillis();
             long t2_create_todo = todos.testCreateTodo();
             end_time = Calendar.getInstance().getTimeInMillis();
             long t1_create_todo = end_time - start_time;
 
+            todoCSVs.get(0).append(String.valueOf(sample_time));
+            todoCSVs.get(0).append(',');
+            todoCSVs.get(0).append(String.valueOf(t1_create_todo));
+            todoCSVs.get(0).append(',');
+            todoCSVs.get(0).append(String.valueOf(t2_create_todo));
+            todoCSVs.get(0).append('\n');
+
             // Modify todo
+            sample_time = Calendar.getInstance().getTimeInMillis();
             start_time = Calendar.getInstance().getTimeInMillis();
             long t2_modify_todo = todos.testModifyTodo();
             end_time = Calendar.getInstance().getTimeInMillis();
             long t1_modify_todo = end_time - start_time;
 
+            todoCSVs.get(1).append(String.valueOf(sample_time));
+            todoCSVs.get(1).append(',');
+            todoCSVs.get(1).append(String.valueOf(t1_modify_todo));
+            todoCSVs.get(1).append(',');
+            todoCSVs.get(1).append(String.valueOf(t2_modify_todo));
+            todoCSVs.get(1).append('\n');
+
             // Delete todo
+            sample_time = Calendar.getInstance().getTimeInMillis();
             start_time = Calendar.getInstance().getTimeInMillis();
             long t2_delete_todo = todos.testDeleteTodo();
             end_time = Calendar.getInstance().getTimeInMillis();
             long t1_delete_todo = end_time - start_time;
+
+            todoCSVs.get(2).append(String.valueOf(sample_time));
+            todoCSVs.get(2).append(',');
+            todoCSVs.get(2).append(String.valueOf(t1_delete_todo));
+            todoCSVs.get(2).append(',');
+            todoCSVs.get(2).append(String.valueOf(t2_delete_todo));
+            todoCSVs.get(2).append('\n');
 
             tr = new TestResult(TOTAL_INSTANCES, t1_create_todo, t2_create_todo, t1_modify_todo, t2_modify_todo, t1_delete_todo, t2_delete_todo);
             todosResults.add(tr);
@@ -100,8 +133,9 @@ public class AppTests {
 
         TOTAL_INSTANCES = 3; // reset total number of instances
         for(int i = 0; i < NUM_LOOPS; i++) {
-
             TestResult tr;
+
+            long sample_time;
             long start_time;
             long end_time;
 
@@ -111,22 +145,47 @@ public class AppTests {
             TOTAL_INSTANCES++;
 
             // Create category
+            sample_time = Calendar.getInstance().getTimeInMillis();
             start_time = Calendar.getInstance().getTimeInMillis();
             long t2_create_category = categories.testCreateCategory();
             end_time = Calendar.getInstance().getTimeInMillis();
             long t1_create_category = end_time - start_time;
 
+            categoryCSVs.get(0).append(String.valueOf(sample_time));
+            categoryCSVs.get(0).append(',');
+            categoryCSVs.get(0).append(String.valueOf(t1_create_category));
+            categoryCSVs.get(0).append(',');
+            categoryCSVs.get(0).append(String.valueOf(t2_create_category));
+            categoryCSVs.get(0).append('\n');
+
+
             // Modify category
+            sample_time = Calendar.getInstance().getTimeInMillis();
             start_time = Calendar.getInstance().getTimeInMillis();
             long t2_modify_category = categories.testModifyCategory();
             end_time = Calendar.getInstance().getTimeInMillis();
             long t1_modify_category = end_time - start_time;
 
+            categoryCSVs.get(1).append(String.valueOf(sample_time));
+            categoryCSVs.get(1).append(',');
+            categoryCSVs.get(1).append(String.valueOf(t1_modify_category));
+            categoryCSVs.get(1).append(',');
+            categoryCSVs.get(1).append(String.valueOf(t2_modify_category));
+            categoryCSVs.get(1).append('\n');
+
             // Delete category
+            sample_time = Calendar.getInstance().getTimeInMillis();
             start_time = Calendar.getInstance().getTimeInMillis();
             long t2_delete_category = categories.testDeleteCategory();
             end_time = Calendar.getInstance().getTimeInMillis();
             long t1_delete_category = end_time - start_time;
+
+            categoryCSVs.get(2).append(String.valueOf(sample_time));
+            categoryCSVs.get(2).append(',');
+            categoryCSVs.get(2).append(String.valueOf(t1_delete_category));
+            categoryCSVs.get(2).append(',');
+            categoryCSVs.get(2).append(String.valueOf(t2_delete_category));
+            categoryCSVs.get(2).append('\n');
 
             tr = new TestResult(TOTAL_INSTANCES, t1_create_category, t2_create_category, t1_modify_category, t2_modify_category, t1_delete_category, t2_delete_category);
             categoriesResults.add(tr);
@@ -144,29 +203,54 @@ public class AppTests {
             TestResult tr;
             long start_time;
             long end_time;
+            long sample_time;
 
-            // Add another category
+            // Add another project
             Random rn = new Random();
             AppTests.createProject("Test Category #"+rn.nextInt(), false, true, "This is a test description #"+rn.nextInt());
             TOTAL_INSTANCES++;
 
             // Create project
+            sample_time = Calendar.getInstance().getTimeInMillis();
             start_time = Calendar.getInstance().getTimeInMillis();
-            long t2_create_project = categories.testCreateCategory();
+            long t2_create_project = projects.testCreateProject();
             end_time = Calendar.getInstance().getTimeInMillis();
             long t1_create_project = end_time - start_time;
 
+            projectCSVs.get(0).append(String.valueOf(sample_time));
+            projectCSVs.get(0).append(',');
+            projectCSVs.get(0).append(String.valueOf(t2_create_project));
+            projectCSVs.get(0).append(',');
+            projectCSVs.get(0).append(String.valueOf(t1_create_project));
+            projectCSVs.get(0).append('\n');
+
             // Modify project
+            sample_time = Calendar.getInstance().getTimeInMillis();
             start_time = Calendar.getInstance().getTimeInMillis();
-            long t2_modify_project = categories.testModifyCategory();
+            long t2_modify_project = projects.testModifyProject();
             end_time = Calendar.getInstance().getTimeInMillis();
             long t1_modify_project = end_time - start_time;
 
+            projectCSVs.get(1).append(String.valueOf(sample_time));
+            projectCSVs.get(1).append(',');
+            projectCSVs.get(1).append(String.valueOf(t2_modify_project));
+            projectCSVs.get(1).append(',');
+            projectCSVs.get(1).append(String.valueOf(t1_modify_project));
+            projectCSVs.get(1).append('\n');
+
             // Delete project
+            sample_time = Calendar.getInstance().getTimeInMillis();
             start_time = Calendar.getInstance().getTimeInMillis();
-            long t2_delete_project = categories.testDeleteCategory();
+            long t2_delete_project = projects.testDeleteProject();
             end_time = Calendar.getInstance().getTimeInMillis();
             long t1_delete_project = end_time - start_time;
+
+            projectCSVs.get(2).append(String.valueOf(sample_time));
+            projectCSVs.get(2).append(',');
+            projectCSVs.get(2).append(String.valueOf(t2_delete_project));
+            projectCSVs.get(2).append(',');
+            projectCSVs.get(2).append(String.valueOf(t1_delete_project));
+            projectCSVs.get(2).append('\n');
 
             tr = new TestResult(TOTAL_INSTANCES, t1_create_project, t2_create_project, t1_modify_project, t2_modify_project, t1_delete_project, t2_delete_project);
             projectsResults.add(tr);
@@ -182,6 +266,21 @@ public class AppTests {
         AppTests.teardown();
         System.out.print("OK\n----------\n");
 
+        for(FileWriter f : categoryCSVs){
+            f.flush();
+            f.close();
+        }
+
+        for(FileWriter f : projectCSVs){
+            f.flush();
+            f.close();
+        }
+
+        for(FileWriter f : todoCSVs){
+            f.flush();
+            f.close();
+        }
+
         return;
 
     }
@@ -195,6 +294,32 @@ public class AppTests {
         }
         System.out.println("----------");
 
+    }
+
+    public static ArrayList<FileWriter> makeCSVs(String name) throws IOException {
+        FileWriter create = new FileWriter("csv/" + name + "-create.csv");
+        csvSetup(create);
+        FileWriter modify = new FileWriter("csv/" + name + "-modify.csv");
+        csvSetup(modify);
+        FileWriter delete = new FileWriter("csv/" + name + "-delete.csv");
+        csvSetup(delete);
+
+        ArrayList<FileWriter> CSVs = new ArrayList<FileWriter>();
+        CSVs.add(create);
+        CSVs.add(modify);
+        CSVs.add(delete);
+
+        return  CSVs;
+    }
+
+    public static void csvSetup(FileWriter writer) throws IOException {
+        writer.append("Sample Time");
+        writer.append(',');
+        writer.append("T1");
+        writer.append(',');
+        writer.append("T2");
+        writer.append(',');
+        writer.append('\n');
     }
 
     /**
