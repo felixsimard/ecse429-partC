@@ -1,6 +1,7 @@
 package APITests;
 
 
+import com.sun.management.OperatingSystemMXBean;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
@@ -9,6 +10,7 @@ import org.json.simple.JSONObject;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Calendar;
 
@@ -20,25 +22,38 @@ import static org.hamcrest.core.IsEqual.equalTo;
 
 import java.util.Random;
 
+/*
+
+OperatingSystemMXBean osBean = ManagementFactory.getPlatformMXBean(
+                    OperatingSystemMXBean.class);
+            // What % CPU load this current JVM is taking, from 0.0-1.0
+            System.out.println("PROCESS LOAD: " + osBean.getProcessCpuLoad());
+            // What % load the overall system is at, from 0.0-1.0
+            System.out.println("CPU LOAD: " + osBean.getSystemCpuLoad());
+
+ */
 public class AppTests {
 
     private static final int STATUS_CODE_SUCCESS = 200;
     private static final int STATUS_CODE_CREATED = 201;
     private static final int STATUS_CODE_FAILURE = 400;
     private static final int STATUS_CODE_NOT_FOUND = 404;
+    private static boolean todo_cpu_flag = true;
+    private static int TOTAL_INSTANCES = 3;
 
+    static OperatingSystemMXBean osBean = ManagementFactory.getPlatformMXBean(
+            OperatingSystemMXBean.class);
 
     public AppTests() {
         RestAssured.baseURI = "http://localhost:4567";
     }
 
-    public static void main(String[] args) throws InterruptedException, IOException{
+    public static void main(String[] args) throws InterruptedException, IOException {
 
         ArrayList<FileWriter> todoCSVs = makeCSVs("todo");
         ArrayList<FileWriter> projectCSVs = makeCSVs("project");
         ArrayList<FileWriter> categoryCSVs = makeCSVs("category");
 
-        int TOTAL_INSTANCES = 3;
         int NUM_LOOPS = 10;
 
         TodosTests todos = new TodosTests();
@@ -66,7 +81,12 @@ public class AppTests {
         //-------------------------
         // TODOS
 
-        for(int i = 0; i < NUM_LOOPS; i++) {
+//        todo_cpu_flag = true;
+//
+//        Thread cpu_loag_thread = new Thread(() -> start_cpu_load_thread_instances("todo", "DELETE"));
+//        cpu_loag_thread.start();
+
+        for (int i = 0; i < NUM_LOOPS; i++) {
 
             TestResult tr;
             long start_time;
@@ -192,72 +212,7 @@ public class AppTests {
 
         }
 
-        AppTests.displayResults(categoriesResults, "CATEGORIES");
-
-        //-------------------------
-        // PROJECTS
-
-        TOTAL_INSTANCES = 3; // reset total number of instances
-        for(int i = 0; i < NUM_LOOPS; i++) {
-
-            TestResult tr;
-            long start_time;
-            long end_time;
-            long sample_time;
-
-            // Add another project
-            Random rn = new Random();
-            AppTests.createProject("Test Category #"+rn.nextInt(), false, true, "This is a test description #"+rn.nextInt());
-            TOTAL_INSTANCES++;
-
-            // Create project
-            sample_time = Calendar.getInstance().getTimeInMillis();
-            start_time = Calendar.getInstance().getTimeInMillis();
-            long t2_create_project = projects.testCreateProject();
-            end_time = Calendar.getInstance().getTimeInMillis();
-            long t1_create_project = end_time - start_time;
-
-            projectCSVs.get(0).append(String.valueOf(sample_time));
-            projectCSVs.get(0).append(',');
-            projectCSVs.get(0).append(String.valueOf(t2_create_project));
-            projectCSVs.get(0).append(',');
-            projectCSVs.get(0).append(String.valueOf(t1_create_project));
-            projectCSVs.get(0).append('\n');
-
-            // Modify project
-            sample_time = Calendar.getInstance().getTimeInMillis();
-            start_time = Calendar.getInstance().getTimeInMillis();
-            long t2_modify_project = projects.testModifyProject();
-            end_time = Calendar.getInstance().getTimeInMillis();
-            long t1_modify_project = end_time - start_time;
-
-            projectCSVs.get(1).append(String.valueOf(sample_time));
-            projectCSVs.get(1).append(',');
-            projectCSVs.get(1).append(String.valueOf(t2_modify_project));
-            projectCSVs.get(1).append(',');
-            projectCSVs.get(1).append(String.valueOf(t1_modify_project));
-            projectCSVs.get(1).append('\n');
-
-            // Delete project
-            sample_time = Calendar.getInstance().getTimeInMillis();
-            start_time = Calendar.getInstance().getTimeInMillis();
-            long t2_delete_project = projects.testDeleteProject();
-            end_time = Calendar.getInstance().getTimeInMillis();
-            long t1_delete_project = end_time - start_time;
-
-            projectCSVs.get(2).append(String.valueOf(sample_time));
-            projectCSVs.get(2).append(',');
-            projectCSVs.get(2).append(String.valueOf(t2_delete_project));
-            projectCSVs.get(2).append(',');
-            projectCSVs.get(2).append(String.valueOf(t1_delete_project));
-            projectCSVs.get(2).append('\n');
-
-            tr = new TestResult(TOTAL_INSTANCES, t1_create_project, t2_create_project, t1_modify_project, t2_modify_project, t1_delete_project, t2_delete_project);
-            projectsResults.add(tr);
-
-        }
-
-        AppTests.displayResults(projectsResults, "PROJECTS");
+//        AppTests.displayResults(projectsResults, "PROJECTS");
 
         //-------------------------
 
@@ -266,20 +221,22 @@ public class AppTests {
         AppTests.teardown();
         System.out.print("OK\n----------\n");
 
-        for(FileWriter f : categoryCSVs){
+        for (FileWriter f : categoryCSVs) {
             f.flush();
             f.close();
         }
 
-        for(FileWriter f : projectCSVs){
+        for (FileWriter f : projectCSVs) {
             f.flush();
             f.close();
         }
 
-        for(FileWriter f : todoCSVs){
+        for (FileWriter f : todoCSVs) {
             f.flush();
             f.close();
         }
+
+        // todo_cpu_flag = false;
 
         return;
 
@@ -289,8 +246,8 @@ public class AppTests {
 
         System.out.println("Results for " + resultsType);
         System.out.println("Total instances \tT1 Create \tT2 Create \tT1 Modify \tT2 Modify \tT1 Delete \tT2 Delete");
-        for(TestResult tr: results) {
-            System.out.println(tr.getTotalInstances()+ "\t\t\t\t\t" +tr.getT1Create()+ "\t\t\t" +tr.getT2Create()+ "\t\t\t" +tr.getT1Modify()+ "\t\t\t" +tr.getT2Modify()+ "\t\t\t" +tr.getT1Delete()+ "\t\t\t" +tr.getT2Delete());
+        for (TestResult tr : results) {
+            System.out.println(tr.getTotalInstances() + "\t\t\t\t\t" + tr.getT1Create() + "\t\t\t" + tr.getT2Create() + "\t\t\t" + tr.getT1Modify() + "\t\t\t" + tr.getT2Modify() + "\t\t\t" + tr.getT1Delete() + "\t\t\t" + tr.getT2Delete());
         }
         System.out.println("----------");
 
@@ -309,7 +266,7 @@ public class AppTests {
         CSVs.add(modify);
         CSVs.add(delete);
 
-        return  CSVs;
+        return CSVs;
     }
 
     public static void csvSetup(FileWriter writer) throws IOException {
@@ -319,11 +276,14 @@ public class AppTests {
         writer.append(',');
         writer.append("T2");
         writer.append(',');
+        writer.append("CPU Usage");
+        writer.append(",");
         writer.append('\n');
     }
 
     /**
      * Initialize some todos
+     *
      * @param num_todos
      */
     public static void setupTodos(int num_todos) {
@@ -332,8 +292,8 @@ public class AppTests {
         System.out.print("Initializing todos...");
         String title = "Test Todo #";
         String description = "This is a test description #";
-        for(int i = 0; i < num_todos; i++) {
-            AppTests.createTodo(title + (i+1), false, description + (i+1));
+        for (int i = 0; i < num_todos; i++) {
+            AppTests.createTodo(title + (i + 1), false, description + (i + 1));
         }
         System.out.print("OK\n----------\n");
 
@@ -341,6 +301,7 @@ public class AppTests {
 
     /**
      * Initialize some categories
+     *
      * @param num_categories
      */
     public static void setupCategories(int num_categories) {
@@ -348,14 +309,15 @@ public class AppTests {
 
         System.out.print("Initializing categories...");
         String title = "Test Category #";
-        for(int i = 0; i < num_categories; i++) {
-            AppTests.createCategory(title + (i+1));
+        for (int i = 0; i < num_categories; i++) {
+            AppTests.createCategory(title + (i + 1));
         }
         System.out.print("OK\n----------\n");
     }
 
     /**
      * Initialize some projects
+     *
      * @param num_projects
      */
     public static void setupProjects(int num_projects) {
@@ -364,8 +326,8 @@ public class AppTests {
         System.out.print("Initializing projects...");
         String title = "Test Project #";
         String description = "This is a test description #";
-        for(int i = 0; i < num_projects; i++) {
-            AppTests.createProject(title + (i+1), false, true, description + (i+1));
+        for (int i = 0; i < num_projects; i++) {
+            AppTests.createProject(title + (i + 1), false, true, description + (i + 1));
         }
         System.out.print("OK\n----------\n");
     }
@@ -374,12 +336,10 @@ public class AppTests {
     /**
      * This function creates a Todo.
      *
-     * @param titleOfTodo - the tile to be used to create the todo
-     * @param doneStatus - the doneStatus to be used to create the todo
+     * @param titleOfTodo       - the tile to be used to create the todo
+     * @param doneStatus        - the doneStatus to be used to create the todo
      * @param descriptionOfTodo - the description to be used to create the todo
-     *
      * @return int corresponding to id of todo
-     *
      */
     private static int createTodo(String titleOfTodo, Boolean doneStatus, String descriptionOfTodo) {
         RequestSpecification request = RestAssured.given().baseUri("http://localhost:4567");
@@ -406,7 +366,6 @@ public class AppTests {
      * This function will create a category
      *
      * @param categoryName
-     *
      * @return int corresponding to id of the category
      */
     private static int createCategory(String categoryName) {
@@ -428,14 +387,12 @@ public class AppTests {
     }
 
     /**
-     *
      * This function will create a project
      *
      * @param title
      * @param completed
      * @param active
      * @param description
-     *
      * @return int corresponding to id of the project
      */
     private static int createProject(String title, boolean completed, boolean active, String description) {
@@ -460,9 +417,7 @@ public class AppTests {
     }
 
     /**
-     *
      * Starting application (setup)
-     *
      */
     public static void setUp() {
         try {
@@ -473,7 +428,7 @@ public class AppTests {
                 try {
                     get("http://localhost:4567/");
                     appStarted = true;
-                } catch (Exception e){
+                } catch (Exception e) {
                     Thread.sleep(200);
                 }
             }
@@ -483,8 +438,8 @@ public class AppTests {
     }
 
     /**
-     *
      * Teardown of application
+     *
      * @throws InterruptedException
      */
     public static void teardown() throws InterruptedException {
@@ -493,4 +448,170 @@ public class AppTests {
     }
 
 
+    private static long getMemoryUse() {
+        return Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+    }
+
+    private static String getSampleTime() {
+        Calendar cal = Calendar.getInstance();
+        return cal.get(Calendar.HOUR_OF_DAY) + ":" + cal.get(Calendar.MINUTE) + ":" +
+                cal.get(Calendar.SECOND) + ":" + cal.get(Calendar.MILLISECOND);
+    }
+
+    public static void start_cpu_load_thread_sample_time(String type, String action) {
+        try {
+            // setup csv file
+            FileWriter csv;
+
+            csv = new FileWriter("csv/" + type + "-CPU_LOAD-" + action + ".csv");
+
+            csv.append("Sample Time");
+            csv.append(',');
+            csv.append("Cpu Load");
+            csv.append(',');
+            csv.append("\n");
+
+            System.out.println("CPU LOAD CSV CREATED");
+
+            //double initial_time = Calendar.getInstance().getTimeInMillis();
+            while (todo_cpu_flag) {
+                String sample_time = getSampleTime();
+                double cpu_load = osBean.getProcessCpuLoad();
+                csv.append(sample_time);
+                csv.append(',');
+                csv.append(String.valueOf(cpu_load));
+                csv.append(',');
+                csv.append("\n");
+                try {
+                    Thread.sleep(3);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void start_memory_usage_thread_sample_time(String name, String action) {
+        try {
+            // setup csv file
+            FileWriter csv;
+
+            csv = new FileWriter("csv/" + name + "-MEM_USAGE-" + action + ".csv");
+
+            csv.append("Sample Time");
+            csv.append(',');
+            csv.append("Memory Usage");
+            csv.append(',');
+            csv.append("\n");
+
+            System.out.println("MEMORY USAGE CSV CREATED");
+
+            //double initial_time = Calendar.getInstance().getTimeInMillis();
+            while (todo_cpu_flag) {
+                String sample_time = getSampleTime();
+                long mem_used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+                csv.append(sample_time);
+                csv.append(',');
+                csv.append(String.valueOf(mem_used));
+                csv.append(',');
+                csv.append("\n");
+                try {
+                    Thread.sleep(3);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void start_cpu_load_thread_instances(String type, String action) {
+        try {
+            // setup csv file
+            FileWriter csv;
+
+            csv = new FileWriter("csv/" + type + "-CPU_LOAD-" + action + "-instances.csv");
+
+            csv.append("Sample Time");
+            csv.append(',');
+            csv.append("Cpu Load");
+            csv.append(',');
+            csv.append("\n");
+
+            System.out.println("CPU LOAD CSV CREATED");
+
+            //double initial_time = Calendar.getInstance().getTimeInMillis();
+            int tmp = TOTAL_INSTANCES;
+            while (todo_cpu_flag) {
+                if (tmp != TOTAL_INSTANCES)
+                {
+                    tmp = TOTAL_INSTANCES;
+                    double cpu_load = osBean.getProcessCpuLoad();
+                    if (cpu_load == 0.0) {
+                        tmp--;
+                        continue;
+                    }
+                    csv.append(String.valueOf(TOTAL_INSTANCES));
+                    csv.append(',');
+                    csv.append(String.valueOf(cpu_load));
+                    csv.append(',');
+                    csv.append("\n");
+                }
+                try {
+                    Thread.sleep(3);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            csv.flush();
+            csv.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void start_memory_usage_thread_nbr_of_instances(String name, String action) {
+        try {
+            // setup csv file
+            FileWriter csv;
+
+            csv = new FileWriter("csv/" + name + "-MEM_USAGE-" + action + "-instances.csv");
+
+            csv.append("Total instances");
+            csv.append(',');
+            csv.append("Memory Usage");
+            csv.append(',');
+            csv.append("\n");
+
+            System.out.println("MEMORY USAGE CSV CREATED");
+
+            //double initial_time = Calendar.getInstance().getTimeInMillis();
+            int tmp = TOTAL_INSTANCES;
+            while (todo_cpu_flag) {
+                if (tmp != TOTAL_INSTANCES)
+                {
+                    tmp = TOTAL_INSTANCES;
+
+                    long mem_used = getMemoryUse();
+                    csv.append(String.valueOf(TOTAL_INSTANCES));
+                    csv.append(',');
+                    csv.append(String.valueOf(mem_used));
+                    csv.append(',');
+                    csv.append("\n");
+                }
+                try {
+                    Thread.sleep(3);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            csv.flush();
+            csv.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
