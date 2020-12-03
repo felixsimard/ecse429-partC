@@ -1,6 +1,10 @@
 package APITests;
 
 
+import APITests.Threads.CPULoadInstanceThread;
+import APITests.Threads.CPULoadSampleTime;
+import APITests.Threads.MemoryInstancesThread;
+import APITests.Threads.MemorySampleTimeThread;
 import com.sun.management.OperatingSystemMXBean;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
@@ -22,16 +26,6 @@ import static org.hamcrest.core.IsEqual.equalTo;
 
 import java.util.Random;
 
-/*
-
-OperatingSystemMXBean osBean = ManagementFactory.getPlatformMXBean(
-                    OperatingSystemMXBean.class);
-            // What % CPU load this current JVM is taking, from 0.0-1.0
-            System.out.println("PROCESS LOAD: " + osBean.getProcessCpuLoad());
-            // What % load the overall system is at, from 0.0-1.0
-            System.out.println("CPU LOAD: " + osBean.getSystemCpuLoad());
-
- */
 public class AppTests {
 
     private static final int STATUS_CODE_SUCCESS = 200;
@@ -39,7 +33,7 @@ public class AppTests {
     private static final int STATUS_CODE_FAILURE = 400;
     private static final int STATUS_CODE_NOT_FOUND = 404;
     private static boolean todo_cpu_flag = true;
-    private static int TOTAL_INSTANCES = 3;
+    public static int TOTAL_INSTANCES = 3;
 
     static OperatingSystemMXBean osBean = ManagementFactory.getPlatformMXBean(
             OperatingSystemMXBean.class);
@@ -49,6 +43,22 @@ public class AppTests {
     }
 
     public static void main(String[] args) throws InterruptedException, IOException {
+
+        CPULoadInstanceThread cpuInstance = new CPULoadInstanceThread();
+        Thread t = new Thread(cpuInstance);
+        t.start();
+
+        CPULoadSampleTime cpuSample = new CPULoadSampleTime();
+        Thread t2 = new Thread(cpuSample);
+        t2.start();
+
+        MemoryInstancesThread memoryInstance = new MemoryInstancesThread();
+        Thread t3 = new Thread(memoryInstance);
+        t3.start();
+
+        MemorySampleTimeThread memorySample = new MemorySampleTimeThread();
+        Thread t4 = new Thread(memorySample);
+        t4.start();
 
         // ----- setup CSV for transaction time graphs ------
         ArrayList<FileWriter> todoCSVs = makeCSVs("todo", "transaction_time_sample_time", 0 );
@@ -506,171 +516,10 @@ public class AppTests {
         Thread.sleep(260);
     }
 
-
-    private static long getMemoryUse() {
-        return Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-    }
-
     private static String getSampleTime() {
         Calendar cal = Calendar.getInstance();
         return cal.get(Calendar.HOUR_OF_DAY) + ":" + cal.get(Calendar.MINUTE) + ":" +
                 cal.get(Calendar.SECOND) + ":" + cal.get(Calendar.MILLISECOND);
     }
 
-    public static void start_cpu_load_thread_sample_time(String type, String action) {
-        try {
-            // setup csv file
-            FileWriter csv;
-
-            csv = new FileWriter("csv/" + type + "-CPU_LOAD-" + action + ".csv");
-
-            csv.append("Sample Time");
-            csv.append(',');
-            csv.append("Cpu Load");
-            csv.append(',');
-            csv.append("\n");
-
-            System.out.println("CPU LOAD CSV CREATED");
-
-            //double initial_time = Calendar.getInstance().getTimeInMillis();
-            while (todo_cpu_flag) {
-                String sample_time = getSampleTime();
-                double cpu_load = osBean.getProcessCpuLoad();
-                csv.append(sample_time);
-                csv.append(',');
-                csv.append(String.valueOf(cpu_load));
-                csv.append(',');
-                csv.append("\n");
-                try {
-                    Thread.sleep(3);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void start_memory_usage_thread_sample_time(String name, String action) {
-        try {
-            // setup csv file
-            FileWriter csv;
-
-            csv = new FileWriter("csv/" + name + "-MEM_USAGE-" + action + ".csv");
-
-            csv.append("Sample Time");
-            csv.append(',');
-            csv.append("Memory Usage");
-            csv.append(',');
-            csv.append("\n");
-
-            System.out.println("MEMORY USAGE CSV CREATED");
-
-            //double initial_time = Calendar.getInstance().getTimeInMillis();
-            while (todo_cpu_flag) {
-                String sample_time = getSampleTime();
-                long mem_used = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-                csv.append(sample_time);
-                csv.append(',');
-                csv.append(String.valueOf(mem_used));
-                csv.append(',');
-                csv.append("\n");
-                try {
-                    Thread.sleep(3);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void start_cpu_load_thread_instances(String type, String action) {
-        try {
-            // setup csv file
-            FileWriter csv;
-
-            csv = new FileWriter("csv/" + type + "-CPU_LOAD-" + action + "-instances.csv");
-
-            csv.append("Sample Time");
-            csv.append(',');
-            csv.append("Cpu Load");
-            csv.append(',');
-            csv.append("\n");
-
-            System.out.println("CPU LOAD CSV CREATED");
-
-            //double initial_time = Calendar.getInstance().getTimeInMillis();
-            int tmp = TOTAL_INSTANCES;
-            while (todo_cpu_flag) {
-                if (tmp != TOTAL_INSTANCES)
-                {
-                    tmp = TOTAL_INSTANCES;
-                    double cpu_load = osBean.getProcessCpuLoad();
-                    if (cpu_load == 0.0) {
-                        tmp--;
-                        continue;
-                    }
-                    csv.append(String.valueOf(TOTAL_INSTANCES));
-                    csv.append(',');
-                    csv.append(String.valueOf(cpu_load));
-                    csv.append(',');
-                    csv.append("\n");
-                }
-                try {
-                    Thread.sleep(3);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            csv.flush();
-            csv.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void start_memory_usage_thread_nbr_of_instances(String name, String action) {
-        try {
-            // setup csv file
-            FileWriter csv;
-
-            csv = new FileWriter("csv/" + name + "-MEM_USAGE-" + action + "-instances.csv");
-
-            csv.append("Total instances");
-            csv.append(',');
-            csv.append("Memory Usage");
-            csv.append(',');
-            csv.append("\n");
-
-            System.out.println("MEMORY USAGE CSV CREATED");
-
-            //double initial_time = Calendar.getInstance().getTimeInMillis();
-            int tmp = TOTAL_INSTANCES;
-            while (todo_cpu_flag) {
-                if (tmp != TOTAL_INSTANCES)
-                {
-                    tmp = TOTAL_INSTANCES;
-
-                    long mem_used = getMemoryUse();
-                    csv.append(String.valueOf(TOTAL_INSTANCES));
-                    csv.append(',');
-                    csv.append(String.valueOf(mem_used));
-                    csv.append(',');
-                    csv.append("\n");
-                }
-                try {
-                    Thread.sleep(3);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            csv.flush();
-            csv.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 }
